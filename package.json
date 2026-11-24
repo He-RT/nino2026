@@ -1,0 +1,17 @@
+{
+  "name": "nino-daily-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Auto-updating daily NOAA OISST v2.1 ENSO anomaly monitor (Niño 3, Niño 1+2, Niño 3.4)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "update-data": "uv run --with-requirements scripts/requirements.txt python3 scripts/update_oisst.py",
+    "backfill-data": "uv run --with-requirements scripts/requirements.txt python3 scripts/update_oisst.py --backfill"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
