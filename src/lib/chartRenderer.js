@@ -17,6 +17,9 @@ export const PLOT_BOX = {
   bottom: 842,
 };
 
+export const FEATURED_ORDER = ['1982-83', '1997-98', '2015-16', '2023-24'];
+const FEATURED_DRAW_ORDER = [...FEATURED_ORDER].reverse();
+
 export const COLORS = {
   paper: '#F6F3EC',
   inkPrimary: '#1C1B18',
@@ -28,7 +31,8 @@ export const COLORS = {
   '1982-83': '#3B6B8C',
   '1997-98': '#B07D2B',
   '2015-16': '#5E7344',
-  extra: '#6D4C7D',
+  '2023-24': '#6D4C7D',
+  extra: '#2A7B76',
   others: '#9B948A',
 };
 
@@ -65,7 +69,7 @@ export function getVisibleSeasonKeys(meta, options) {
   if (options.extraSeason && options.extraSeason !== 'none' && options.extraSeason !== meta.currentSeason) {
     keys.push(options.extraSeason);
   }
-  for (const fs of ['2015-16', '1997-98', '1982-83']) {
+  for (const fs of FEATURED_DRAW_ORDER) {
     if (options.visibleFeatured[fs]) keys.push(fs);
   }
   keys.push(meta.currentSeason);
@@ -208,7 +212,7 @@ export function renderEnsoChart(ctx, width, height, { region, meta, options, hov
     });
   }
 
-  for (const fs of ['2015-16', '1997-98', '1982-83']) {
+  for (const fs of FEATURED_DRAW_ORDER) {
     if (options.visibleFeatured[fs]) {
       strokeSeries(ctx, region.series[fs], yMin, yMax, {
         color: COLORS[fs],
@@ -263,7 +267,7 @@ export function renderEnsoChart(ctx, width, height, { region, meta, options, hov
   const legendItems = [
     { label: formatSeasonLabel(meta.currentSeason), color: COLORS.current, width: 3.1, alpha: 1 },
   ];
-  for (const fs of ['1982-83', '1997-98', '2015-16']) {
+  for (const fs of FEATURED_ORDER) {
     if (options.visibleFeatured[fs]) {
       legendItems.push({ label: formatSeasonLabel(fs), color: COLORS[fs], width: 1.9, alpha: 1 });
     }
@@ -287,7 +291,7 @@ export function renderEnsoChart(ctx, width, height, { region, meta, options, hov
 
   const legX = PLOT_BOX.left + 16;
   const legY = PLOT_BOX.top + 10;
-  const rowH = 26;
+  const rowH = 25;
   const legW = 132;
   const legH = legendItems.length * rowH + 14;
 
@@ -345,7 +349,7 @@ export function renderEnsoChart(ctx, width, height, { region, meta, options, hov
 
     const markerKeys = [
       ...(options.extraSeason && options.extraSeason !== 'none' ? [{ key: options.extraSeason, color: COLORS.extra }] : []),
-      ...['2015-16', '1997-98', '1982-83']
+      ...FEATURED_DRAW_ORDER
         .filter((fs) => options.visibleFeatured[fs])
         .map((fs) => ({ key: fs, color: COLORS[fs] })),
       { key: meta.currentSeason, color: COLORS.current },

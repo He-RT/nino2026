@@ -13,5 +13,8 @@
   },
   "devDependencies": {
     "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "@microsoft/focusgroup-polyfill": "^1.6.0"
   }
 }

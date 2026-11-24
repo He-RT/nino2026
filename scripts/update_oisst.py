@@ -24,10 +24,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-import h5py
 import numpy as np
-import requests
-from requests.adapters import HTTPAdapter
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 CSV_PATH = ROOT_DIR / "data" / "oisst_daily_sst.csv"
@@ -39,7 +36,7 @@ S3_BASE = "https://noaa-cdr-sea-surface-temp-optimum-interpolation-pds.s3.amazon
 ARCHIVE_START = date(1981, 9, 1)
 CLIM_START_YEAR = 1991
 CLIM_END_YEAR = 2020
-FEATURED_SEASONS = ["1982-83", "1997-98", "2015-16"]
+FEATURED_SEASONS = ["1982-83", "1997-98", "2015-16", "2023-24"]
 
 FILE_PATTERN = re.compile(r"oisst-avhrr-v02r01\.(\d{8})(_preliminary)?\.nc")
 
@@ -84,8 +81,11 @@ _grid_lock = threading.Lock()
 _grid_cache: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]] | None = None
 
 
-def get_session() -> requests.Session:
+def get_session():
     """Return a thread-local pooled requests.Session."""
+    import requests
+    from requests.adapters import HTTPAdapter
+
     sess = getattr(_thread_local, "session", None)
     if sess is None:
         sess = requests.Session()
@@ -179,6 +179,8 @@ def get_region_slices(lat: np.ndarray, lon: np.ndarray) -> dict[str, tuple[np.nd
 
 def parse_oisst_netcdf4(payload: bytes) -> tuple[float, float, float]:
     """Parse one daily NetCDF-4/HDF5 OISST file and return cosine-weighted (nino3, nino12, nino34) SST."""
+    import h5py
+
     with h5py.File(io.BytesIO(payload), "r") as f:
         lat = f["lat"][:]
         lon = f["lon"][:]
@@ -546,28 +548,37 @@ def main() -> int:
         action="store_true",
         help="Re-download full 1981-09 to present archive instead of incremental/gap-fill update.",
     )
+    parser.add_argument(
+        "--rebuild-only",
+        action="store_true",
+        help="Rebuild public/data/enso-daily.json from local data/oisst_daily_sst.csv without network fetches.",
+    )
     args = parser.parse_args()
 
     records = {} if args.backfill else load_csv(CSV_PATH)
-    prelim_months = {
-        d[:4] + d[5:7] for d, rec in records.items() if rec["status"] == "preliminary"
-    }
-
-    recent_catalog = discover_ncei_catalog(prelim_months)
-    latest_ncei_str = max(recent_catalog)
-    latest_ncei_date = date.fromisoformat(latest_ncei_str)
-    print(
-        f"NCEI latest available date: {latest_ncei_str} ({recent_catalog[latest_ncei_str][1]}) | "
-        f"existing CSV rows: {len(records)}"
-    )
-
-    target_dates = select_target_dates(records, recent_catalog, latest_ncei_date, args.backfill)
-    if target_dates:
-        fetched = fetch_dates(target_dates, recent_catalog)
-        records.update(fetched)
-        save_csv(CSV_PATH, records)
+    if args.rebuild_only:
+        if not records:
+            raise RuntimeError(f"Cannot rebuild without existing {CSV_PATH}")
     else:
-        print("All dates up to date; CSV unchanged.")
+        prelim_months = {
+            d[:4] + d[5:7] for d, rec in records.items() if rec["status"] == "preliminary"
+        }
+
+        recent_catalog = discover_ncei_catalog(prelim_months)
+        latest_ncei_str = max(recent_catalog)
+        latest_ncei_date = date.fromisoformat(latest_ncei_str)
+        print(
+            f"NCEI latest available date: {latest_ncei_str} ({recent_catalog[latest_ncei_str][1]}) | "
+            f"existing CSV rows: {len(records)}"
+        )
+
+        target_dates = select_target_dates(records, recent_catalog, latest_ncei_date, args.backfill)
+        if target_dates:
+            fetched = fetch_dates(target_dates, recent_catalog)
+            records.update(fetched)
+            save_csv(CSV_PATH, records)
+        else:
+            print("All dates up to date; CSV unchanged.")
 
     payload = build_enso_json(records)
     JSON_PATH.parent.mkdir(parents=True, exist_ok=True)

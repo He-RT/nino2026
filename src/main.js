@@ -1,5 +1,6 @@
 import {
   COLORS,
+  FEATURED_ORDER,
   LOGICAL_HEIGHT,
   LOGICAL_WIDTH,
   PLOT_BOX,
@@ -23,6 +24,7 @@ const REGION_ORDER = ['nino3', 'nino12', 'nino34'];
 
 const state = {
   data: null,
+  selectedRegion: 'nino3',
   hoverDayIndex: null,
   activeRegion: null,
   options: {
@@ -30,15 +32,17 @@ const state = {
       '1982-83': true,
       '1997-98': true,
       '2015-16': true,
+      '2023-24': true,
     },
     showOthers: true,
     extraSeason: 'none',
-    syncCrosshair: true,
   },
 };
 
 const canvases = {};
 const tooltips = {};
+const tabs = {};
+const panels = {};
 let liveAnnouncer = null;
 
 function announce(msg) {
@@ -75,7 +79,13 @@ function updateMetadataAndSummary(data) {
     const region = regions[key];
     const lt = region.latest;
 
-    // Stat pill above each chart
+    // Tab quick metric badge
+    const tabMetric = document.getElementById(`tab-val-${key}`);
+    if (tabMetric) {
+      tabMetric.textContent = formatSignedTemp(lt.anomaly, 2);
+    }
+
+    // Stat pill above active chart
     const pill = document.getElementById(`stat-${key}`);
     const deltaStr =
       lt.prevDayDelta === 0
@@ -98,6 +108,7 @@ function updateMetadataAndSummary(data) {
     const p82 = region.featuredPeaks['1982-83'];
     const p97 = region.featuredPeaks['1997-98'];
     const p15 = region.featuredPeaks['2015-16'];
+    const p23 = region.featuredPeaks['2023-24'];
 
     const cells = [
       { tag: 'th', scope: 'row', text: region.shortName },
@@ -108,6 +119,7 @@ function updateMetadataAndSummary(data) {
       { tag: 'td', text: p82 ? `${formatSignedTemp(p82.anomaly, 2)} (${p82.date.slice(0, 7)})` : '—' },
       { tag: 'td', text: p97 ? `${formatSignedTemp(p97.anomaly, 2)} (${p97.date.slice(0, 7)})` : '—' },
       { tag: 'td', text: p15 ? `${formatSignedTemp(p15.anomaly, 2)} (${p15.date.slice(0, 7)})` : '—' },
+      { tag: 'td', text: p23 ? `${formatSignedTemp(p23.anomaly, 2)} (${p23.date.slice(0, 7)})` : '—' },
     ];
 
     for (const c of cells) {
@@ -135,8 +147,7 @@ function sizeAndDrawCanvas(regionKey) {
   }
 
   const ctx = canvas.getContext('2d');
-  const activeDay =
-    state.options.syncCrosshair || state.activeRegion === regionKey ? state.hoverDayIndex : null;
+  const activeDay = state.activeRegion === regionKey ? state.hoverDayIndex : null;
 
   renderEnsoChart(ctx, canvas.width, canvas.height, {
     region: state.data.regions[regionKey],
@@ -148,9 +159,7 @@ function sizeAndDrawCanvas(regionKey) {
 }
 
 function renderAllCharts() {
-  for (const key of REGION_ORDER) {
-    sizeAndDrawCanvas(key);
-  }
+  sizeAndDrawCanvas(state.selectedRegion);
   updateTooltips();
 }
 
@@ -161,8 +170,9 @@ function updateTooltips() {
   for (const key of REGION_ORDER) {
     const tip = tooltips[key];
     const showHere =
+      key === state.selectedRegion &&
       state.hoverDayIndex !== null &&
-      (state.activeRegion === key || state.options.syncCrosshair);
+      state.activeRegion === key;
 
     if (!showHere) {
       tip.hidden = true;
@@ -196,7 +206,7 @@ function updateTooltips() {
       });
     }
 
-    for (const fs of ['1982-83', '1997-98', '2015-16']) {
+    for (const fs of FEATURED_ORDER) {
       if (state.options.visibleFeatured[fs]) {
         rows.push({
           label: formatSeasonLabel(fs),
@@ -250,7 +260,6 @@ function updateTooltips() {
     tip.appendChild(ul);
     tip.hidden = false;
 
-    // Position tooltip cleanly inside canvas stage
     const canvas = canvases[key];
     const stageW = canvas.clientWidth;
     const stageH = canvas.clientHeight;
@@ -266,6 +275,99 @@ function updateTooltips() {
   }
 }
 
+function selectRegionTab(regionKey, { moveFocus = false } = {}) {
+  if (!REGION_ORDER.includes(regionKey)) return;
+  const changed = state.selectedRegion !== regionKey;
+  state.selectedRegion = regionKey;
+  if (changed) {
+    state.hoverDayIndex = null;
+    state.activeRegion = null;
+  }
+
+  for (const key of REGION_ORDER) {
+    const isSelected = key === regionKey;
+    const tab = tabs[key];
+    const panel = panels[key];
+    tab.setAttribute('aria-selected', String(isSelected));
+    tab.toggleAttribute('focusgroupstart', isSelected);
+    if (isSelected) {
+      panel.removeAttribute('hidden');
+    } else {
+      panel.setAttribute('hidden', 'until-found');
+    }
+  }
+
+  const selectedTab = tabs[regionKey];
+  if (moveFocus) {
+    selectedTab.focus({ preventScroll: true });
+  }
+  selectedTab.scrollIntoView({ block: 'nearest', inline: 'nearest', container: 'nearest' });
+
+  requestAnimationFrame(() => renderAllCharts());
+}
+
+function wireTabs() {
+  for (const key of REGION_ORDER) {
+    const tab = tabs[key];
+    const panel = panels[key];
+
+    tab.addEventListener('click', () => {
+      selectRegionTab(key);
+    });
+
+    // Selection follows focus for instant responsive tab navigation
+    tab.addEventListener('focus', () => {
+      if (state.selectedRegion !== key) {
+        selectRegionTab(key);
+      }
+    });
+
+    // Sync selection when native Find-in-Page reveals a hidden="until-found" panel
+    panel.addEventListener('beforematch', () => {
+      selectRegionTab(key);
+    });
+  }
+
+  // Fallback arrow-key support if native focusGroup is unavailable before polyfill initializes
+  const tablist = document.querySelector('.region-tablist');
+  tablist.addEventListener('keydown', (ev) => {
+    if (Object.hasOwn(HTMLElement.prototype, 'focusGroup')) return;
+    const idx = REGION_ORDER.indexOf(document.activeElement?.dataset?.regionTab);
+    if (idx === -1) return;
+
+    let nextIdx = null;
+    if (ev.key === 'ArrowRight') nextIdx = (idx + 1) % REGION_ORDER.length;
+    else if (ev.key === 'ArrowLeft') nextIdx = (idx - 1 + REGION_ORDER.length) % REGION_ORDER.length;
+    else if (ev.key === 'Home') nextIdx = 0;
+    else if (ev.key === 'End') nextIdx = REGION_ORDER.length - 1;
+
+    if (nextIdx !== null) {
+      ev.preventDefault();
+      selectRegionTab(REGION_ORDER[nextIdx], { moveFocus: true });
+    }
+  });
+
+  if (!CSS.supports('animation-timeline', 'scroll()')) {
+    const scroller = document.querySelector('.region-tablist.scroller');
+    if (scroller && scroller.firstElementChild && scroller.lastElementChild) {
+      const [first, last] = [scroller.firstElementChild, scroller.lastElementChild];
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const { target, intersectionRatio } of entries) {
+            scroller.classList.toggle(
+              target === first ? 'more-start' : 'more-end',
+              intersectionRatio < 1
+            );
+          }
+        },
+        { root: scroller, threshold: 1, rootMargin: '1px' }
+      );
+      observer.observe(first);
+      observer.observe(last);
+    }
+  }
+}
+
 function attachChartInteractions(regionKey) {
   const canvas = canvases[regionKey];
 
@@ -278,7 +380,7 @@ function attachChartInteractions(regionKey) {
   };
 
   canvas.addEventListener('pointermove', (ev) => {
-    if (!state.data) return;
+    if (!state.data || state.selectedRegion !== regionKey) return;
     const { lx } = toLogical(ev.clientX, ev.clientY);
     if (lx < PLOT_BOX.left - 8 || lx > PLOT_BOX.right + 8) {
       if (state.activeRegion === regionKey) {
@@ -302,7 +404,7 @@ function attachChartInteractions(regionKey) {
   });
 
   canvas.addEventListener('click', (ev) => {
-    if (!state.data) return;
+    if (!state.data || state.selectedRegion !== regionKey) return;
     const { lx, ly } = toLogical(ev.clientX, ev.clientY);
     const hit = findNearestOtherSeason(
       lx,
@@ -325,7 +427,7 @@ function attachChartInteractions(regionKey) {
   });
 
   canvas.addEventListener('keydown', (ev) => {
-    if (!state.data) return;
+    if (!state.data || state.selectedRegion !== regionKey) return;
     const latestIdx = state.data.regions[regionKey].latest.dayIndex;
     const step = ev.shiftKey ? 7 : 1;
 
@@ -368,8 +470,6 @@ function wireControls() {
 
       if (key === 'others') {
         state.options.showOthers = next;
-      } else if (key === 'sync') {
-        state.options.syncCrosshair = next;
       } else {
         state.options.visibleFeatured[key] = next;
       }
@@ -445,11 +545,21 @@ function wireControls() {
 
 async function init() {
   liveAnnouncer = document.getElementById('live-announcer');
+
+  if (!Object.hasOwn(HTMLElement.prototype, 'focusGroup')) {
+    import('@microsoft/focusgroup-polyfill')
+      .then(({ polyfill }) => polyfill())
+      .catch(() => {});
+  }
+
   for (const key of REGION_ORDER) {
     canvases[key] = document.getElementById(`canvas-${key}`);
     tooltips[key] = document.getElementById(`tooltip-${key}`);
+    tabs[key] = document.getElementById(`tab-${key}`);
+    panels[key] = document.getElementById(`panel-${key}`);
     attachChartInteractions(key);
   }
+  wireTabs();
   wireControls();
 
   const resizeObserver = new ResizeObserver(() => {

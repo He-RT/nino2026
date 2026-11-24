@@ -37,11 +37,11 @@
         <button type="button" class="pill-toggle" data-toggle="2015-16" aria-pressed="true">
           <span class="swatch swatch-2015" aria-hidden="true"></span>2015–16
         </button>
+        <button type="button" class="pill-toggle" data-toggle="2023-24" aria-pressed="true">
+          <span class="swatch swatch-2023" aria-hidden="true"></span>2023–24
+        </button>
         <button type="button" class="pill-toggle" data-toggle="others" aria-pressed="true">
           <span class="swatch swatch-others" aria-hidden="true"></span>其他年份
-        </button>
-        <button type="button" class="pill-toggle" data-toggle="sync" aria-pressed="true">
-          三图联动
         </button>
       </div>
 
@@ -55,57 +55,80 @@
 
     <div class="status-banner" id="load-error" role="alert" hidden></div>
 
-    <div class="charts-grid" id="charts-grid">
-      <figure class="chart-card" data-region="nino3">
-        <div class="card-toolbar">
-          <div class="card-meta">
-            <span class="region-badge">Niño 3</span>
-            <span class="stat-pill" id="stat-nino3">载入中…</span>
-          </div>
-          <button type="button" class="btn-export" data-export="nino3" disabled>
-            导出 <span class="visually-hidden">Niño 3 逐日海温距平 </span>PNG
-          </button>
-        </div>
-        <div class="canvas-stage">
-          <canvas id="canvas-nino3" tabindex="0" role="img" aria-label="Niño 3 逐日海温距平折线图"></canvas>
-          <div class="chart-tooltip" id="tooltip-nino3" hidden></div>
-        </div>
-        <figcaption class="visually-hidden" id="figcaption-nino3"></figcaption>
-      </figure>
+    <div class="region-tabs">
+      <div class="region-tablist scroller" role="tablist" focusgroup="tablist nomemory" aria-label="选择厄尔尼诺关键海区">
+        <button type="button" role="tab" id="tab-nino3" data-region-tab="nino3" aria-selected="true" focusgroupstart>
+          <span class="tab-name">Niño 3</span>
+          <span class="tab-metric" id="tab-val-nino3">—</span>
+        </button>
+        <button type="button" role="tab" id="tab-nino12" data-region-tab="nino12" aria-selected="false">
+          <span class="tab-name">Niño 1+2</span>
+          <span class="tab-metric" id="tab-val-nino12">—</span>
+        </button>
+        <button type="button" role="tab" id="tab-nino34" data-region-tab="nino34" aria-selected="false">
+          <span class="tab-name">Niño 3.4</span>
+          <span class="tab-metric" id="tab-val-nino34">—</span>
+        </button>
+      </div>
 
-      <figure class="chart-card" data-region="nino12">
-        <div class="card-toolbar">
-          <div class="card-meta">
-            <span class="region-badge">Niño 1+2</span>
-            <span class="stat-pill" id="stat-nino12">载入中…</span>
-          </div>
-          <button type="button" class="btn-export" data-export="nino12" disabled>
-            导出 <span class="visually-hidden">Niño 1+2 逐日海温距平 </span>PNG
-          </button>
+      <div class="tab-panels">
+        <div class="tab-panel" role="tabpanel" id="panel-nino3" aria-labelledby="tab-nino3">
+          <figure class="chart-card" data-region="nino3">
+            <div class="card-toolbar">
+              <div class="card-meta">
+                <span class="region-badge">Niño 3</span>
+                <span class="stat-pill" id="stat-nino3">载入中…</span>
+              </div>
+              <button type="button" class="btn-export" data-export="nino3" disabled>
+                导出 <span class="visually-hidden">Niño 3 逐日海温距平 </span>PNG
+              </button>
+            </div>
+            <div class="canvas-stage">
+              <canvas id="canvas-nino3" tabindex="0" role="img" aria-label="Niño 3 逐日海温距平折线图"></canvas>
+              <div class="chart-tooltip" id="tooltip-nino3" hidden></div>
+            </div>
+            <figcaption class="visually-hidden" id="figcaption-nino3"></figcaption>
+          </figure>
         </div>
-        <div class="canvas-stage">
-          <canvas id="canvas-nino12" tabindex="0" role="img" aria-label="Niño 1+2 逐日海温距平折线图"></canvas>
-          <div class="chart-tooltip" id="tooltip-nino12" hidden></div>
-        </div>
-        <figcaption class="visually-hidden" id="figcaption-nino12"></figcaption>
-      </figure>
 
-      <figure class="chart-card" data-region="nino34">
-        <div class="card-toolbar">
-          <div class="card-meta">
-            <span class="region-badge">Niño 3.4</span>
-            <span class="stat-pill" id="stat-nino34">载入中…</span>
-          </div>
-          <button type="button" class="btn-export" data-export="nino34" disabled>
-            导出 <span class="visually-hidden">Niño 3.4 逐日海温距平 </span>PNG
-          </button>
+        <div class="tab-panel" role="tabpanel" id="panel-nino12" aria-labelledby="tab-nino12" hidden="until-found">
+          <figure class="chart-card" data-region="nino12">
+            <div class="card-toolbar">
+              <div class="card-meta">
+                <span class="region-badge">Niño 1+2</span>
+                <span class="stat-pill" id="stat-nino12">载入中…</span>
+              </div>
+              <button type="button" class="btn-export" data-export="nino12" disabled>
+                导出 <span class="visually-hidden">Niño 1+2 逐日海温距平 </span>PNG
+              </button>
+            </div>
+            <div class="canvas-stage">
+              <canvas id="canvas-nino12" tabindex="0" role="img" aria-label="Niño 1+2 逐日海温距平折线图"></canvas>
+              <div class="chart-tooltip" id="tooltip-nino12" hidden></div>
+            </div>
+            <figcaption class="visually-hidden" id="figcaption-nino12"></figcaption>
+          </figure>
         </div>
-        <div class="canvas-stage">
-          <canvas id="canvas-nino34" tabindex="0" role="img" aria-label="Niño 3.4 逐日海温距平折线图"></canvas>
-          <div class="chart-tooltip" id="tooltip-nino34" hidden></div>
+
+        <div class="tab-panel" role="tabpanel" id="panel-nino34" aria-labelledby="tab-nino34" hidden="until-found">
+          <figure class="chart-card" data-region="nino34">
+            <div class="card-toolbar">
+              <div class="card-meta">
+                <span class="region-badge">Niño 3.4</span>
+                <span class="stat-pill" id="stat-nino34">载入中…</span>
+              </div>
+              <button type="button" class="btn-export" data-export="nino34" disabled>
+                导出 <span class="visually-hidden">Niño 3.4 逐日海温距平 </span>PNG
+              </button>
+            </div>
+            <div class="canvas-stage">
+              <canvas id="canvas-nino34" tabindex="0" role="img" aria-label="Niño 3.4 逐日海温距平折线图"></canvas>
+              <div class="chart-tooltip" id="tooltip-nino34" hidden></div>
+            </div>
+            <figcaption class="visually-hidden" id="figcaption-nino34"></figcaption>
+          </figure>
         </div>
-        <figcaption class="visually-hidden" id="figcaption-nino34"></figcaption>
-      </figure>
+      </div>
     </div>
 
     <details class="info-disclosure">
@@ -124,11 +147,12 @@
                 <th scope="col">1982–83 峰值</th>
                 <th scope="col">1997–98 峰值</th>
                 <th scope="col">2015–16 峰值</th>
+                <th scope="col">2023–24 峰值</th>
               </tr>
             </thead>
             <tbody id="summary-table-body">
               <tr>
-                <td colspan="8">正在读取数据…</td>
+                <td colspan="9">正在读取数据…</td>
               </tr>
             </tbody>
           </table>
@@ -138,8 +162,8 @@
           <h2 id="methodology-heading">口径说明与更新周期</h2>
           <ul>
             <li><strong>数据源与更新频率</strong>：NOAA OISST v2.1（0.25° 全球逐日海温），直接读取 NOAA NCEI 每日 NetCDF-4 原档（历史缺口由 NOAA AWS Open Data S3 镜像补齐）。NOAA 通常于每日约 UTC 14:30（北京时间 22:30）发布最新一日初步数据（<code>preliminary</code>），常规延迟 1–2 天；近 14 天初步数据约两周后订正为最终版（<code>final</code>）。本站 GitHub Actions 每天定时回溯校验最近 25 天并自动修补缺口，确保新增与订正同步完成。</li>
-            <li><strong>计算口径</strong>：1981 年 9 月起，按各自经纬度边界提取海洋格点并作余弦纬度面积加权平均；以 1991–2020 年对应日历日（<code>MM-DD</code>）30 年均值作为气候态基线计算距平。</li>
-            <li><strong>图表交互提示</strong>：悬停或点击图表可对比任意日期各年份数值；点击灰色「其他年份」曲线可直接锁定对比；使用键盘方向键 <code>←</code> / <code>→</code>（配合 <code>Shift</code> 跳转 7 天）也可逐日浏览。</li>
+            <li><strong>计算口径</strong>：1981 年 9 月起，按各自经纬度边界提取海洋格点并作余弦纬度面积加权平均；以 1991–2020 年对应日历日（<code>MM-DD</code>）30 年均值作为气候态基线计算距平，内置对比 <code>1982–83</code>、<code>1997–98</code>、<code>2015–16</code> 与 <code>2023–24</code> 四次典型强事件。</li>
+            <li><strong>图表交互提示</strong>：通过顶部按钮切换 <code>Niño 3</code> / <code>Niño 1+2</code> / <code>Niño 3.4</code>；悬停或点击图表可对比任意日期各年份数值；点击灰色「其他年份」曲线可直接锁定对比；使用键盘方向键 <code>←</code> / <code>→</code>（配合 <code>Shift</code> 跳转 7 天）也可逐日浏览。</li>
           </ul>
           <div class="data-downloads">
             <a href="./data/enso-daily.json" download="enso-daily.json" class="btn-secondary">下载 JSON 数据</a>
